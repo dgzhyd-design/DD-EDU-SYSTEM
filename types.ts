@@ -24,6 +24,7 @@ export interface QuizResult {
 
 export interface Question {
   id: string;
+  createdAt: string;
   stem: string;
   options: string[];
   correctAnswerIndex: number;

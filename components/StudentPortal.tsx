@@ -85,14 +85,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ questions, current
     
     if (quizState === 'submitted') {
         return (
-            <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
-                <div className="text-center border-b pb-4 mb-6">
-                    <h1 className="text-3xl font-bold text-indigo-700">Exam Results</h1>
-                    <p className="text-2xl font-semibold text-gray-800 mt-4">You Scored: {score} / {totalMarks}</p>
-                    <p className="text-md text-gray-500 mt-1">({correctAnswersCount} out of {shuffledQuestions.length} correct)</p>
+            <div className="emboss-card p-6 md:p-8 rounded-lg">
+                <div className="text-center border-b border-white/10 pb-4 mb-6">
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">Exam Results</h1>
+                    <p className="text-2xl font-semibold text-slate-100 mt-4">You Scored: {score} / {totalMarks}</p>
+                    <p className="text-md text-slate-400 mt-1">({correctAnswersCount} out of {shuffledQuestions.length} correct)</p>
                     <button
                         onClick={handleTryAgain}
-                        className="mt-6 inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="mt-6 inline-flex items-center justify-center px-5 py-2.5 border-none text-sm font-medium rounded-md text-white bg-gradient-to-br from-purple-500 to-indigo-600 emboss-light hover:from-purple-600 hover:to-indigo-700 active:emboss-light-active transition-all"
                     >
                         <ArrowPathIcon className="w-5 h-5 mr-2 -ml-1" />
                         Try Again
@@ -115,18 +115,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ questions, current
     }
 
     return (
-        <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
-            <div className="text-center border-b pb-4 mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">A1 Level Examination</h1>
-                <p className="text-md text-gray-500 mt-1">Sample Paper</p>
+        <div className="emboss-card p-6 md:p-8 rounded-lg">
+            <div className="text-center border-b border-white/10 pb-4 mb-6">
+                <h1 className="text-3xl font-bold text-slate-100">A1 Level Examination</h1>
+                <p className="text-md text-slate-400 mt-1">Sample Paper</p>
                 <div className="flex justify-center gap-8 mt-4">
                     <p className="text-sm font-medium">
-                        <span className="text-gray-500">Total Questions:</span>
-                        <span className="text-gray-900 font-bold ml-2">{shuffledQuestions.length}</span>
+                        <span className="text-slate-400">Total Questions:</span>
+                        <span className="text-slate-100 font-bold ml-2">{shuffledQuestions.length}</span>
                     </p>
                     <p className="text-sm font-medium">
-                        <span className="text-gray-500">Total Marks:</span>
-                        <span className="text-gray-900 font-bold ml-2">{totalMarks}</span>
+                        <span className="text-slate-400">Total Marks:</span>
+                        <span className="text-slate-100 font-bold ml-2">{totalMarks}</span>
                     </p>
                 </div>
             </div>
@@ -146,10 +146,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ questions, current
                                 />
                             ))}
                         </div>
-                        <div className="mt-8 pt-6 border-t">
+                        <div className="mt-8 pt-6 border-t border-white/10">
                             <button
                                 type="submit"
-                                className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                className="w-full inline-flex items-center justify-center px-6 py-3 border-none text-base font-medium rounded-md text-white bg-gradient-to-br from-green-500 to-emerald-600 emboss-light hover:from-green-600 hover:to-emerald-700 active:emboss-light-active transition-all"
                             >
                                 Submit Exam
                             </button>
@@ -157,12 +157,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ questions, current
                     </form>
                 </>
             ) : (
-                <div className="text-center py-10 px-6 bg-gray-50 rounded-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center py-10 px-6 bg-black/20 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3 className="mt-2 text-lg font-medium text-gray-900">No Exam Paper Available</h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h3 className="mt-2 text-lg font-medium text-slate-100">No Exam Paper Available</h3>
+                    <p className="mt-1 text-sm text-slate-400">
                         The teacher has not approved any questions for the exam yet.
                     </p>
                 </div>

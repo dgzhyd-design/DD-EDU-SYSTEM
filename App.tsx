@@ -1,31 +1,63 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { QuestionBank } from './components/QuestionBank';
 import { Header } from './components/Header';
-import { ExamGeneratorModal } from './components/ExamGeneratorModal';
+import { AdvancedExamGeneratorModal } from './components/AdvancedExamGeneratorModal';
 import { StudentPortal } from './components/StudentPortal';
 import { LoginPage } from './components/LoginPage';
 import { AdminPortal } from './components/AdminPortal';
 import { LandingPage } from './components/LandingPage';
+import { HomePage } from './components/HomePage';
 import type { Question, User, QuizResult } from './types';
 import { INITIAL_QUESTIONS, USERS } from './constants';
 
+/**
+ * A custom hook to manage state that persists in localStorage.
+ * @param key The key to use in localStorage.
+ * @param initialValue The initial value to use if nothing is in localStorage.
+ * @returns A stateful value, and a function to update it.
+ */
+function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error setting localStorage key "${key}":`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
+
 const App: React.FC = () => {
-  const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTIONS);
+  const [questions, setQuestions] = usePersistentState<Question[]>('app_questions', INITIAL_QUESTIONS);
   const [isGeneratorModalOpen, setIsGeneratorModalOpen] = useState(false);
   
   // --- Authentication and User Management State ---
   const [currentUser, setCurrentUser] = useState<Omit<User, 'password'> | null>(null);
-  const [students, setStudents] = useState<User[]>(USERS.filter(u => u.role === 'student'));
-  const [teachers, setTeachers] = useState<User[]>(USERS.filter(u => u.role === 'teacher'));
+  const [students, setStudents] = usePersistentState<User[]>('app_students', USERS.filter(u => u.role === 'student'));
+  const [teachers, setTeachers] = usePersistentState<User[]>('app_teachers', USERS.filter(u => u.role === 'teacher'));
   const [selectedPortal, setSelectedPortal] = useState<User['role'] | null>(null);
+  const [showHomePage, setShowHomePage] = useState(true);
   
   const approvedQuestions = useMemo(() => questions.filter(q => q.isApproved), [questions]);
 
-  const addMultipleQuestions = (newQuestions: Omit<Question, 'id' | 'isAiGenerated' | 'isApproved'>[]) => {
+  const addMultipleQuestions = (newQuestions: Omit<Question, 'id' | 'isAiGenerated' | 'isApproved' | 'createdAt'>[]) => {
     const questionsToAdd = newQuestions.map((q, index) => ({
       ...q,
       id: `q-${Date.now()}-${index}`,
+      createdAt: new Date().toISOString(),
       isAiGenerated: true,
       isApproved: false,
     }));
@@ -59,6 +91,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     setSelectedPortal(null);
+    setShowHomePage(true);
   };
   
   const handleCreateStudent = (name: string, className: string) => {
@@ -137,6 +170,10 @@ const App: React.FC = () => {
   };
 
   // --- Render Logic based on Authentication State ---
+  if (showHomePage) {
+    return <HomePage onEnter={() => setShowHomePage(false)} />;
+  }
+
   if (!currentUser) {
     if (!selectedPortal) {
       return <LandingPage onSelectPortal={setSelectedPortal} />;
@@ -180,16 +217,16 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800">
+    <div className="min-h-screen text-slate-200">
       <Header user={currentUser} onLogout={handleLogout} />
       <main className="container mx-auto p-4 md:p-8">
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
           {renderPortal()}
         </div>
       </main>
       
       {currentUser.role === 'teacher' && (
-        <ExamGeneratorModal 
+        <AdvancedExamGeneratorModal 
           isOpen={isGeneratorModalOpen}
           onClose={() => setIsGeneratorModalOpen(false)}
           onAddQuestions={addMultipleQuestions}

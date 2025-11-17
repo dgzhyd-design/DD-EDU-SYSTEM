@@ -15,37 +15,37 @@ interface StudentQuestionItemProps {
 export const StudentQuestionItem: React.FC<StudentQuestionItemProps> = ({ question, index, isSubmitted, selectedAnswer, onAnswerChange }) => {
     
     const getOptionClasses = (optionIndex: number) => {
-        const baseClasses = "flex items-center p-3 rounded-md border text-sm w-full transition-all";
+        const baseClasses = "flex items-center p-3 rounded-md border text-sm w-full transition-all duration-200";
 
         if (isSubmitted) {
             const isCorrect = optionIndex === question.correctAnswerIndex;
             const isSelected = optionIndex === selectedAnswer;
 
             if (isCorrect) {
-                return `${baseClasses} bg-green-50 border-green-400 text-green-800 font-semibold`;
+                return `${baseClasses} bg-green-500/10 border-green-500/30 text-green-300 font-semibold`;
             }
             if (isSelected && !isCorrect) {
-                return `${baseClasses} bg-red-50 border-red-400 text-red-800 font-semibold`;
+                return `${baseClasses} bg-red-500/10 border-red-500/30 text-red-300 font-semibold`;
             }
-            return `${baseClasses} bg-gray-50 border-gray-200 text-gray-700`;
+            return `${baseClasses} bg-black/20 border-white/10 text-slate-300`;
         }
 
         // State before submission
         if (selectedAnswer === optionIndex) {
-            return `${baseClasses} bg-indigo-50 border-indigo-400 ring-2 ring-indigo-300 text-indigo-900 cursor-pointer`;
+            return `${baseClasses} bg-purple-500/20 border-purple-400 text-slate-100 cursor-pointer emboss-light-active`;
         }
 
-        return `${baseClasses} bg-white border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer`;
+        return `${baseClasses} bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 cursor-pointer`;
     };
     
     return (
-    <div className="border-t border-gray-200 pt-6 first:border-t-0 first:pt-0">
+    <div className="border-t border-white/10 pt-6 first:border-t-0 first:pt-0">
       <div className="flex justify-between items-start gap-4">
         <div className="flex items-start">
-            <span className="text-lg font-bold text-gray-800 mr-2">{index + 1}.</span>
-            <p className="text-lg font-medium text-gray-800">{question.stem}</p>
+            <span className="text-lg font-bold text-slate-200 mr-2">{index + 1}.</span>
+            <p className="text-lg font-medium text-slate-200">{question.stem}</p>
         </div>
-        <div className="flex-shrink-0 bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+        <div className="flex-shrink-0 bg-black/20 text-slate-300 text-xs font-semibold px-2.5 py-1 rounded-full">
             {question.marks} Mark{question.marks > 1 ? 's' : ''}
         </div>
       </div>
@@ -70,11 +70,11 @@ export const StudentQuestionItem: React.FC<StudentQuestionItemProps> = ({ questi
                     
                     <div className="flex-shrink-0 mr-3">
                         {isSubmitted ? (
-                            isCorrect ? <CheckCircleIcon className="w-6 h-6 text-green-500" />
-                            : isSelected ? <XCircleIcon className="w-6 h-6 text-red-500" />
-                            : <div className="w-6 h-6 border-2 border-gray-400 rounded-full"></div>
+                            isCorrect ? <CheckCircleIcon className="w-6 h-6" />
+                            : isSelected ? <XCircleIcon className="w-6 h-6" />
+                            : <div className="w-6 h-6 border-2 border-slate-600 rounded-full"></div>
                         ) : (
-                            <div className={`w-6 h-6 border-2 rounded-full flex items-center justify-center ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            <div className={`w-6 h-6 border-2 rounded-full flex items-center justify-center transition-all ${isSelected ? 'border-purple-400 bg-purple-500/50' : 'border-slate-500'}`}>
                                 {isSelected && <div className="w-3 h-3 bg-white rounded-full"></div>}
                             </div>
                         )}
@@ -83,7 +83,7 @@ export const StudentQuestionItem: React.FC<StudentQuestionItemProps> = ({ questi
                     <span id={`option-${question.id}-${idx}`} className="flex-grow">
                         {question.type === QuestionType.MCQ || question.type === QuestionType.FILL ? (
                             <>
-                                <span className="font-semibold text-gray-600 mr-2">{String.fromCharCode(65 + idx)}.</span>
+                                <span className="font-semibold text-slate-400 mr-2">{String.fromCharCode(65 + idx)}.</span>
                                 <span>{option}</span>
                             </>
                         ) : ( // True/False
@@ -95,9 +95,9 @@ export const StudentQuestionItem: React.FC<StudentQuestionItemProps> = ({ questi
         })}
       </fieldset>
       {isSubmitted && question.explanation && (
-        <div className="mt-4 pl-8 p-3 bg-gray-50 rounded-md border border-gray-200">
-            <p className="text-sm font-semibold text-gray-800">Explanation:</p>
-            <p className="text-sm text-gray-600 mt-1">{question.explanation}</p>
+        <div className="mt-4 pl-8 p-3 bg-black/20 rounded-md border border-white/10">
+            <p className="text-sm font-semibold text-slate-200">Explanation:</p>
+            <p className="text-sm text-slate-300 mt-1">{question.explanation}</p>
         </div>
       )}
     </div>

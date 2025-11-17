@@ -4,6 +4,7 @@ import { Question, QuestionType, Difficulty, User } from './types';
 export const INITIAL_QUESTIONS: Question[] = [
   {
     id: 'q-1',
+    createdAt: new Date('2023-10-26T10:00:00Z').toISOString(),
     stem: 'What is the capital of France?',
     options: ['London', 'Berlin', 'Paris', 'Madrid'],
     correctAnswerIndex: 2,
@@ -17,6 +18,7 @@ export const INITIAL_QUESTIONS: Question[] = [
   },
   {
     id: 'q-2',
+    createdAt: new Date('2023-10-26T10:05:00Z').toISOString(),
     stem: 'The sun rises in the west.',
     options: ['True', 'False'],
     correctAnswerIndex: 1,

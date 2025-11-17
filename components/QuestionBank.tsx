@@ -27,24 +27,24 @@ const TopicAccordion: React.FC<{ topic: string, questions: Question[] }> = ({ to
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="border border-gray-200 rounded-md">
+        <div className="border border-white/10 rounded-md bg-white/5">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex justify-between items-center p-3 bg-gray-50 hover:bg-gray-100 focus:outline-none"
+                className="w-full flex justify-between items-center p-3 hover:bg-white/5 focus:outline-none transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-700">{topic}</span>
-                    <span className="text-xs font-medium text-white bg-indigo-500 px-2 py-0.5 rounded-full">{questions.length}</span>
+                    <span className="font-semibold text-slate-200">{topic}</span>
+                    <span className="text-xs font-medium text-white bg-purple-500 px-2 py-0.5 rounded-full">{questions.length}</span>
                 </div>
-                {isOpen ? <ChevronUpIcon className="w-5 h-5 text-gray-500" /> : <ChevronDownIcon className="w-5 h-5 text-gray-500" />}
+                {isOpen ? <ChevronUpIcon className="w-5 h-5 text-slate-400" /> : <ChevronDownIcon className="w-5 h-5 text-slate-400" />}
             </button>
             {isOpen && (
-                <div className="p-4 border-t border-gray-200 bg-white">
+                <div className="p-4 border-t border-white/10">
                     <div className="space-y-3">
                         {questions.map((q, index) => (
-                            <div key={q.id} className="p-2 border-l-4 border-indigo-200">
-                                <p className="font-medium text-gray-800">{index + 1}. {q.stem}</p>
-                                <p className="text-sm text-green-700 mt-1 ml-4">
+                            <div key={q.id} className="p-2 border-l-4 border-purple-400">
+                                <p className="font-medium text-slate-200">{index + 1}. {q.stem}</p>
+                                <p className="text-sm text-green-400 mt-1 ml-4">
                                     <span className="font-semibold">Answer:</span> {q.options[q.correctAnswerIndex]}
                                 </p>
                             </div>
@@ -59,82 +59,110 @@ const TopicAccordion: React.FC<{ topic: string, questions: Question[] }> = ({ to
 export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQuestion, onUpdateQuestion, onOpenGenerator }) => {
   const [activeTab, setActiveTab] = useState<'bank' | 'worksheets' | 'solutions' | 'topics'>('bank');
   const [filterType, setFilterType] = useState<QuestionType | 'All'>('All');
-  const [worksheet, setWorksheet] = useState<Omit<Question, 'id' | 'isAiGenerated' | 'isApproved' | 'difficulty'>[] | null>(null);
+  const [worksheet, setWorksheet] = useState<Omit<Question, 'id' | 'isAiGenerated' | 'isApproved' | 'difficulty' | 'createdAt'>[] | null>(null);
 
   const approvedQuestions = useMemo(() => questions.filter(q => q.isApproved), [questions]);
   
   const filteredQuestions = useMemo(() => {
-    if (filterType === 'All') {
-      return questions;
+    let questionsToFilter = questions;
+    if (filterType !== 'All') {
+      questionsToFilter = questions.filter(q => q.type === filterType);
     }
-    return questions.filter(q => q.type === filterType);
+    // Sort by creation date, newest first. Using slice() to avoid mutating the original array.
+    return questionsToFilter.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [questions, filterType]);
 
   const questionsByTopic = useMemo(() => {
-    return approvedQuestions.reduce((acc, q) => {
+    // FIX: Provide an explicit generic to .reduce() to ensure correct type inference for the accumulator and the final result.
+    // @ts-ignore
+    return approvedQuestions.reduce<Record<string, Question[]>>((acc, q) => {
         (acc[q.topic] = acc[q.topic] || []).push(q);
         return acc;
-    }, {} as Record<string, Question[]>);
+    }, {});
   }, [approvedQuestions]);
 
   const handleDownloadPdf = () => {
     if (approvedQuestions.length === 0) return;
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = margin;
-    const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    const maxWidth = pageWidth - margin * 2;
 
-    doc.setFontSize(22);
+    // Header
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('A1 Level Examination', doc.internal.pageSize.getWidth() / 2, y, { align: 'center' });
+    doc.text('VARAHI EDU SOLUTION', pageWidth / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(14);
+    doc.text('A1 Level Examination', pageWidth / 2, y, { align: 'center' });
     y += 15;
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
 
-    approvedQuestions.forEach((q, index) => {
-        const questionNumber = `${index + 1}. `;
-        const questionText = `${q.stem}`;
-        const marksText = `(${q.marks} Mark${q.marks > 1 ? 's' : ''})`;
+    let questionCounter = 1;
+
+    Object.entries(questionsByTopic).forEach(([topic, questionsInTopic]) => {
+        const topicMarks = questionsInTopic.reduce((sum, q) => sum + q.marks, 0);
         
-        const questionTextLines = doc.splitTextToSize(questionNumber + questionText, maxWidth - 15);
-        let optionsHeight = 5;
-        if (q.options.length > 0) {
-            q.options.forEach(opt => {
-                optionsHeight += (doc.splitTextToSize(opt, maxWidth - 20).length * 5);
-            });
-        }
-        const totalBlockHeight = (questionTextLines.length * 5) + optionsHeight + 10;
-
-        if (y + totalBlockHeight > pageHeight - margin) {
+        if (y + 20 > pageHeight - margin) {
             doc.addPage();
             y = margin;
         }
 
-        const questionYStart = y;
+        // Topic Header
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(questionNumber, margin, y, { align: 'left' });
-        doc.text(doc.splitTextToSize(questionText, maxWidth - 10), margin + 8, y);
-        y += (doc.splitTextToSize(questionText, maxWidth - 10).length * 5);
-        
+        doc.text(topic, pageWidth / 2, y, { align: 'center' });
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(marksText, maxWidth + margin, questionYStart, { align: 'right' });
+        doc.text(`Marks: ${topicMarks}`, pageWidth - margin, y, { align: 'right' });
+        y += 7;
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
 
-        if (q.options.length > 0) {
-            y += 5;
+        questionsInTopic.forEach((q) => {
+            const questionNumber = `${questionCounter++}. `;
+            const questionText = `${q.stem}`;
+            
+            doc.setFontSize(12);
+            const questionTextLines = doc.splitTextToSize(questionNumber + questionText, maxWidth - 10);
+            let optionsHeight = 5;
+            if (q.options.length > 0) {
+                 doc.setFont('helvetica', 'normal');
+                 q.options.forEach(opt => {
+                    optionsHeight += (doc.splitTextToSize(opt, maxWidth - 20).length * 5);
+                });
+            }
+            const totalBlockHeight = (questionTextLines.length * 5) + optionsHeight + 5;
+
+            if (y + totalBlockHeight > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+
+            doc.setFont('helvetica', 'bold');
+            doc.text(questionNumber, margin, y, { align: 'left' });
+            
             doc.setFont('helvetica', 'normal');
-            q.options.forEach((option, optIndex) => {
-                const optionLabel = q.type === 'Multiple Choice' ? `${String.fromCharCode(65 + optIndex)}) ` : '- ';
-                const optionLines = doc.splitTextToSize(option, maxWidth - 20);
-                doc.text(optionLabel, margin + 5, y);
-                doc.text(optionLines, margin + 12, y);
-                y += optionLines.length * 5;
-            });
-        }
-        
-        y += 10;
+            doc.text(doc.splitTextToSize(questionText, maxWidth - 10), margin + 8, y);
+            y += (doc.splitTextToSize(questionText, maxWidth - 10).length * 5);
+            
+            if (q.options.length > 0) {
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                q.options.forEach((option, optIndex) => {
+                    const optionLabel = q.type === 'Multiple Choice' ? `${String.fromCharCode(65 + optIndex)}) ` : '- ';
+                    const optionLines = doc.splitTextToSize(option, maxWidth - 20);
+                    doc.text(optionLabel, margin + 5, y);
+                    doc.text(optionLines, margin + 12, y);
+                    y += optionLines.length * 5;
+                });
+            }
+            
+            y += 10;
+        });
     });
 
     doc.save('a1-exam-paper.pdf');
@@ -145,16 +173,16 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
         case 'bank':
             return (
                 <div>
-                    <div className="flex items-center space-x-2 mb-4 p-2 bg-gray-50 rounded-md">
-                        <span className="text-sm font-medium text-gray-600">Filter by type:</span>
+                    <div className="flex items-center space-x-2 mb-4 p-2 bg-black/20 rounded-md">
+                        <span className="text-sm font-medium text-slate-300">Filter by type:</span>
                         {filterOptions.map(type => (
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${
+                                className={`px-3 py-1 text-sm font-semibold rounded-md transition-all duration-200 ${
                                     filterType === type 
-                                    ? 'bg-indigo-600 text-white shadow' 
-                                    : 'bg-white text-gray-600 hover:bg-gray-200 border'
+                                    ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white emboss-light' 
+                                    : 'bg-white/10 text-slate-300 hover:bg-white/20'
                                 }`}
                             >
                                 {type}
@@ -174,12 +202,12 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
                         ))}
                         </div>
                     ) : (
-                        <div className="text-center py-10 px-6 bg-gray-50 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="text-center py-10 px-6 bg-black/20 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" />
                             </svg>
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">No questions found</h3>
-                            <p className="mt-1 text-sm text-gray-500">
+                            <h3 className="mt-2 text-lg font-medium text-slate-100">No questions found</h3>
+                            <p className="mt-1 text-sm text-slate-400">
                                 Try a different filter or generate a new exam paper.
                             </p>
                         </div>
@@ -189,7 +217,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
         case 'topics':
             return (
                 <div>
-                    <h3 className="text-xl font-bold text-gray-700 mb-4">Approved Questions by Topic</h3>
+                    <h3 className="text-xl font-bold text-slate-200 mb-4">Approved Questions by Topic</h3>
                     {Object.keys(questionsByTopic).length > 0 ? (
                         <div className="space-y-3">
                             {Object.entries(questionsByTopic).map(([topic, qs]) => (
@@ -197,10 +225,10 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
                             ))}
                         </div>
                     ) : (
-                         <div className="text-center py-10 px-6 bg-gray-50 rounded-md">
-                            <TagIcon className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">No Topics Found</h3>
-                             <p className="mt-1 text-sm text-gray-500">
+                         <div className="text-center py-10 px-6 bg-black/20 rounded-md">
+                            <TagIcon className="mx-auto h-12 w-12 text-slate-500" />
+                            <h3 className="mt-2 text-lg font-medium text-slate-100">No Topics Found</h3>
+                             <p className="mt-1 text-sm text-slate-400">
                                Approve some questions in the Question Bank to see them organized by topic here.
                             </p>
                         </div>
@@ -212,17 +240,17 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
         case 'solutions':
             return (
                 <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-gray-700">Approved Question Solutions</h3>
+                    <h3 className="text-xl font-bold text-slate-200">Approved Question Solutions</h3>
                     {approvedQuestions.length > 0 ? (
                         <div className="space-y-4">
                             {approvedQuestions.map((q, index) => (
-                                <div key={q.id} className="p-4 border rounded-md bg-gray-50 transition-shadow hover:shadow-sm">
-                                    <p className="font-semibold text-gray-800">{index + 1}. {q.stem}</p>
-                                    <p className="mt-2 text-sm text-green-700">
+                                <div key={q.id} className="p-4 border border-white/10 rounded-md bg-white/5 transition-colors hover:bg-white/10">
+                                    <p className="font-semibold text-slate-200">{index + 1}. {q.stem}</p>
+                                    <p className="mt-2 text-sm text-green-400">
                                         <span className="font-bold">Answer:</span> {q.options[q.correctAnswerIndex]}
                                     </p>
                                     {q.explanation && (
-                                        <p className="mt-1 text-sm text-gray-600">
+                                        <p className="mt-1 text-sm text-slate-300">
                                             <span className="font-bold">Explanation:</span> {q.explanation}
                                         </p>
                                     )}
@@ -230,10 +258,10 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-10 px-6 bg-gray-50 rounded-md">
-                            <KeyIcon className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">No Solutions Available</h3>
-                             <p className="mt-1 text-sm text-gray-500">
+                        <div className="text-center py-10 px-6 bg-black/20 rounded-md">
+                            <KeyIcon className="mx-auto h-12 w-12 text-slate-500" />
+                            <h3 className="mt-2 text-lg font-medium text-slate-100">No Solutions Available</h3>
+                             <p className="mt-1 text-sm text-slate-400">
                                Approve some questions in the Question Bank to see their solutions here.
                             </p>
                         </div>
@@ -246,13 +274,13 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
+    <div className="emboss-card p-6 rounded-lg">
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-700">Teacher Dashboard</h2>
+        <h2 className="text-2xl font-bold text-slate-200">Teacher Dashboard</h2>
         <div className="flex items-center gap-2">
             <button 
               onClick={onOpenGenerator}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-gradient-to-br from-purple-500 to-indigo-600 emboss-light hover:from-purple-600 hover:to-indigo-700 active:emboss-light-active transition-all"
             >
               <DocumentPlusIcon className="w-5 h-5 mr-2 -ml-1"/>
               Generate Exam Paper
@@ -260,7 +288,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
             <button 
               onClick={handleDownloadPdf}
               disabled={approvedQuestions.length === 0}
-              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-slate-200 bg-white/10 emboss-light hover:bg-white/20 active:emboss-light-active transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <DocumentArrowDownIcon className="w-5 h-5 mr-2 -ml-1"/>
               Download PDF
@@ -269,7 +297,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
       </div>
 
       <div>
-        <div className="border-b border-gray-200">
+        <div className="border-b border-white/10">
             <nav className="-mb-px flex space-x-6" aria-label="Tabs">
                 {tabs.map((tab) => (
                     <button
@@ -277,11 +305,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
                         onClick={() => setActiveTab(tab.key as any)}
                         className={`inline-flex items-center gap-2 px-1 py-3 border-b-2 text-sm font-semibold transition-colors ${
                             activeTab === tab.key
-                            ? 'border-indigo-500 text-indigo-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ? 'border-purple-400 text-purple-400'
+                            : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-400'
                         }`}
                     >
-                        <tab.icon className={`w-5 h-5 ${activeTab === tab.key ? 'text-indigo-500' : 'text-gray-400'}`} />
+                        <tab.icon className={`w-5 h-5 ${activeTab === tab.key ? 'text-purple-400' : 'text-slate-500'}`} />
                         <span>{tab.name}</span>
                     </button>
                 ))}
