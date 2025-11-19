@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import type { Question } from '../types';
 import { generateWorksheet } from '../services/geminiService';
@@ -84,8 +83,10 @@ export const WorksheetGenerator: React.FC<WorksheetGeneratorProps> = ({ workshee
         if (!worksheet || worksheet.length === 0) return;
 
         type WorksheetQuestion = Omit<Question, 'id' | 'isAiGenerated' | 'isApproved' | 'difficulty' | 'createdAt'>;
-        // FIX: Provide an explicit generic to .reduce() to ensure correct type inference for the accumulator, preventing downstream errors.
-        const questionsByTopic = worksheet.reduce((acc: Record<string, WorksheetQuestion[]>, q) => {
+        
+        const questions = worksheet as WorksheetQuestion[];
+        
+        const questionsByTopic = questions.reduce((acc, q) => {
             (acc[q.topic] = acc[q.topic] || []).push(q);
             return acc;
         }, {} as Record<string, WorksheetQuestion[]>);

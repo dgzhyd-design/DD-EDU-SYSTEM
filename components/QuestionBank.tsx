@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import type { Question } from '../types';
 import { QuestionType } from '../types';
@@ -73,12 +72,10 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ questions, onDeleteQ
   }, [questions, filterType]);
 
   const questionsByTopic = useMemo(() => {
-    // FIX: Provide an explicit generic to .reduce() to ensure correct type inference for the accumulator and the final result.
-    // @ts-ignore
-    return approvedQuestions.reduce<Record<string, Question[]>>((acc, q) => {
+    return approvedQuestions.reduce((acc, q) => {
         (acc[q.topic] = acc[q.topic] || []).push(q);
         return acc;
-    }, {});
+    }, {} as Record<string, Question[]>);
   }, [approvedQuestions]);
 
   const handleDownloadPdf = () => {
